@@ -1,0 +1,15 @@
+1.	Make a copy of the skeleton directory and rename it to the same name as the component you created.
+2.	Modify the 'run' file in that directory to reflect the correct number of input,parameter and output for the component 
+		in the the following line where it has '1' for all three.
+	. $BASEDIR/io.sh 1 1 1 "$@"
+3.	Go to the next line of where it says "## for example:" and enter the appropriate execution commands for the component. 
+4.	Save the file and then delete all the temporary files that were created in that directory due to editing of the files
+		which end with '~'
+5.	Go to the parent directory by "cd .."
+6.	Create the zip file by "zip -r [component_name.zip] [component_name]/*"
+	This will zip all the files in the directory named the same as the component recursively and create a zip file of the 
+	same name with .zip extension.
+7.	Test the zip file by copying it into any test directory and inflating/extracting it with the following command.
+	"unzip [component_name.zip]". A directory should be created with the same name as [component_name] which will contain 
+	the two files "io.sh" and "run".
+

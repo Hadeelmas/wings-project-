@@ -1,0 +1,4 @@
+
+connect to kghldb;
+select * from dbo.patients > $OUTPUT1
+connect reset;

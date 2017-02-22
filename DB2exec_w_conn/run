@@ -1,0 +1,101 @@
+#!/bin/sh
+
+FATAL_EXIT_CODE=1
+FATAL_EXIT_MESSAGE=Failure
+SUCCESS_EXIT_CODE=0
+SUCCESS_EXIT_MESSAGE=Success
+COMMAND_EXIT_CODE=0
+ERROR_LOG_FILE_NAME=error.log
+BASEDIR=`dirname $0`
+#DB2HOME=$DB2_HOME
+DB2DIR='/opt/ibm/db2client/bin'
+
+# EDIT these numbers: the first is the number of input arguments, the
+#second the number of parameter arguments, and the third is the number
+#of output arguments your component expects
+. $BASEDIR/io.sh "$@"
+
+# -- IGNORE
+# print the file names in inputs
+for ((x=1; x<=$INUM; x++)) 
+do
+    for file in ${INPUTS[$x][@]}
+    do
+	echo "Input: $file"
+    done
+done
+
+# print the value of parameters
+for ((y=1; y<=$PNUM; y++)) 
+do
+    for v in ${PARAMS[$y][@]}
+    do
+	echo "Parameter: $v"
+    done
+done
+
+# print the file names in outputs
+for ((z=1; z<=$ONUM; z++)) 
+do
+    for file in ${OUTPUTS[$z][@]}
+    do
+	echo "output: $file"
+    done
+done
+# ----------
+
+### EDIT --- your code here
+# e.g. $BASEDIR/merge.sh -files=$INPUTS1 -threshold=$INPUTS2 > $OUTPUTS1
+# using $BASEDIR/scriptname... is a good idea, since this script shall
+# be able to run anywhere, i.e., not depend on a specific path.
+# Note: if one of the arguments is a collection of size N, then the
+# respective script variable (e.g., $INPUTS1) contains as its value a
+# space separated list of N elements (e.g., "File1 File2 File3").
+
+## This script takes -p1=dbname, -p2=uid, -p3=pwd to connect to a DB. Then it executes -i1 test.sql and outputs the
+##   data to -o1 out.txt and messages to -o2 msg.txt
+
+if [ -e ${OUTPUTS[1]} ]; then echo ${OUTPUTS[1]}" exists. Deleting file before process"; rm ${OUTPUTS[1]}; fi
+if [ -e ${OUTPUTS[2]} ]; then echo ${OUTPUTS[2]}" exists. Deleting file before process"; rm ${OUTPUTS[2]}; fi
+invcomma="'"
+out=`echo $DB2DIR/db2 connect to ${PARAMS[1]} user ${PARAMS[2]} using $invcomma${PARAMS[3]}$invcomma > ${OUTPUTS[2]}`
+err=`$DB2DIR/db2 connect to ${PARAMS[1]} user ${PARAMS[2]} using $invcomma${PARAMS[3]}$invcomma`
+if [ $? -ne 0 ]; then 
+    echo "Error"
+    exit 1
+fi
+err=`$DB2DIR/db2 -tf ${INPUTS[1]} -z ${OUTPUTS[2]}`
+if [ -e out.txt ] 
+then 
+	if [ "${OUTPUTS[1]}" != "out.txt" ]; then err=`mv out.txt ${OUTPUTS[1]}`; fi
+else
+	err=`echo "Error executing the SQL. See ${OUTPUTS[2]}." > ${OUTPUTS[2]}`
+fi
+if [ -e msg.txt ] 
+then
+	if [ "${OUTPUTS[2]}" != "msg.txt" ]; then err=`mv msg.txt ${OUTPUTS[2]}`; fi
+else
+	err=`echo "Error executing the SQL. No messages were generated." > ${OUTPUTS[2]}`
+fi
+
+if [ $? -ne 0 ]; then 
+    echo "Error"
+    exit 1
+fi
+err=`$DB2DIR/db2 connect reset`
+if [ $? -ne 0 ]; then 
+    echo "Error"
+    exit 1
+fi
+
+COMMAND_EXIT_CODE=$?
+#LINES_IN_OUTPUT=`cat $arg3|wc -l`
+
+if [ "$COMMAND_EXIT_CODE" -ne 0 ]; then
+  echo $FATAL_EXIT_MESSAGE
+  exit $FATAL_EXIT_CODE
+else
+  rm -f $ERROR_LOG_FILE_NAME
+  echo $SUCCESS_EXIT_MESSAGE
+  exit $SUCCESS_EXIT_CODE
+fi
